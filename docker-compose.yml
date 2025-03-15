@@ -18,9 +18,7 @@ services:
     restart: unless-stopped
 
   db:
-    build:
-      context: ./mysql
-      dockerfile: Dockerfile.mysql
+    image: mysql:8.0
     ports:
       - "3306:3306"
     environment:
@@ -28,12 +26,14 @@ services:
       - MYSQL_DATABASE=education_system_production
     volumes:
       - mysql-data:/var/lib/mysql
+      - ./mysql/init.sql:/docker-entrypoint-initdb.d/init.sql
     restart: unless-stopped
     healthcheck:
       test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p$$MYSQL_ROOT_PASSWORD"]
       interval: 10s
       timeout: 5s
       retries: 5
+    command: --default-authentication-plugin=mysql_native_password
 
 volumes:
   mysql-data: 

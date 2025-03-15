@@ -1,89 +1,74 @@
-# Docker 部署指南
+# Docker 部署说明
 
-本文档提供了使用 Docker 部署该 Node.js 应用的详细说明。
+本项目已配置为使用国内镜像源，以解决在中国大陆网络环境下的部署问题。
 
-## 前提条件
+## 修改内容
 
-- 安装 [Docker](https://www.docker.com/get-started)
-- 安装 [Docker Compose](https://docs.docker.com/compose/install/)
+1. 主应用 Dockerfile:
+   - 使用阿里云 Debian 镜像源
+   - 使用阿里云 Node.js 安装源
+   - 使用淘宝 NPM 镜像
+
+2. MySQL:
+   - 直接使用官方 MySQL 镜像，而不是从 Debian 安装
+   - 通过 volume 挂载初始化脚本
 
 ## 部署步骤
 
-### 1. 克隆代码库
+1. 确保已安装 Docker 和 Docker Compose
 
-```bash
-git clone <repository-url>
-cd <repository-directory>
-```
+2. 在项目根目录下运行:
+   ```bash
+   docker-compose up -d
+   ```
 
-### 2. 使用 Docker Compose 构建和启动服务
+3. 查看容器状态:
+   ```bash
+   docker-compose ps
+   ```
 
-```bash
-docker-compose up -d
-```
+4. 查看应用日志:
+   ```bash
+   docker-compose logs -f app
+   ```
 
-这将在后台启动应用服务和 MySQL 数据库服务。
+5. 查看数据库日志:
+   ```bash
+   docker-compose logs -f db
+   ```
 
-### 3. 初始化数据库
+## 常见问题
 
-首次部署时，需要运行数据库迁移和种子数据：
+1. 如果遇到网络问题，可以尝试设置 Docker 的镜像加速器:
+   ```bash
+   sudo mkdir -p /etc/docker
+   sudo tee /etc/docker/daemon.json <<-'EOF'
+   {
+     "registry-mirrors": ["https://registry.docker-cn.com", "https://docker.mirrors.ustc.edu.cn"]
+   }
+   EOF
+   sudo systemctl daemon-reload
+   sudo systemctl restart docker
+   ```
 
-```bash
-docker-compose exec app npm run db:migrate
-docker-compose exec app npm run db:seed
-```
-
-### 4. 访问应用
-
-应用将在以下地址运行：
-
-```
-http://localhost:3000
-```
-
-## 常用命令
-
-### 查看日志
-
-```bash
-docker-compose logs -f app  # 查看应用日志
-docker-compose logs -f db   # 查看数据库日志
-```
-
-### 停止服务
-
-```bash
-docker-compose down  # 停止所有服务
-```
-
-### 重新构建和启动服务
-
-```bash
-docker-compose up -d --build
-```
-
-### 重置数据库
-
-```bash
-docker-compose exec app npm run db:reset
-```
-
-## 环境变量
-
-Docker Compose 配置中已经设置了以下环境变量：
-
-- `NODE_ENV`: 运行环境 (production)
-- `PORT`: 应用端口 (3000)
-- `DB_HOST`: 数据库主机名 (db)
-- `DB_USER`: 数据库用户名 (root)
-- `DB_PASSWORD`: 数据库密码 (clwy1234)
-- `DB_NAME`: 数据库名称 (education_system_production)
-
-如需修改这些变量，请编辑 `docker-compose.yml` 文件。
+2. 如果数据库连接失败，请检查:
+   - 数据库容器是否正常运行
+   - 环境变量配置是否正确
+   - 网络连接是否正常
 
 ## 数据持久化
 
-MySQL 数据存储在名为 `mysql-data` 的 Docker 卷中，确保数据在容器重启后仍然保留。
+数据库数据存储在名为 `mysql-data` 的 Docker volume 中，即使容器被删除，数据也不会丢失。
+
+如需备份数据，可以使用:
+```bash
+docker exec -it test-api_db_1 mysqldump -u root -p education_system_production > backup.sql
+```
+
+如需恢复数据，可以使用:
+```bash
+cat backup.sql | docker exec -i test-api_db_1 mysql -u root -p education_system_production
+```
 
 ## 生产环境部署注意事项
 

@@ -1,10 +1,14 @@
 FROM debian:buster-slim
 
+# 使用阿里云镜像源
+RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list && \
+    sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list
+
 # 安装Node.js
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     gnupg \
-    && curl -sL https://deb.nodesource.com/setup_14.x | bash - \
+    && curl -fsSL https://mirrors.aliyun.com/nodejs-release/setup_14.x | bash - \
     && apt-get install -y --no-install-recommends \
     nodejs \
     netcat \
@@ -15,8 +19,9 @@ WORKDIR /app
 # 复制package.json和package-lock.json
 COPY package*.json ./
 
-# 安装依赖
-RUN npm ci --only=production
+# 设置淘宝NPM镜像
+RUN npm config set registry https://registry.npmmirror.com && \
+    npm ci --only=production
 
 # 复制应用代码
 COPY . .
