@@ -4,15 +4,22 @@ FROM debian:buster-slim
 RUN sed -i 's/deb.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list && \
     sed -i 's/security.debian.org/mirrors.aliyun.com/g' /etc/apt/sources.list
 
-# 安装Node.js
+# 安装 Node.js（使用更可靠的方式）
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     gnupg \
-    && curl -fsSL https://mirrors.aliyun.com/nodejs-release/setup_14.x | bash - \
+    ca-certificates \
+    && mkdir -p /etc/apt/keyrings \
+    && curl -fsSL https://mirrors.aliyun.com/nodejs-release/gpgkey/nodesource.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg \
+    && echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://mirrors.aliyun.com/nodejs/deb/node_14.x buster main" > /etc/apt/sources.list.d/nodesource.list \
+    && apt-get update \
     && apt-get install -y --no-install-recommends \
     nodejs \
     netcat \
-    && rm -rf /var/lib/apt/lists/*
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && node -v \
+    && npm -v
 
 WORKDIR /app
 
